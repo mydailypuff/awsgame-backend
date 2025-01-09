@@ -26,11 +26,10 @@ def lambda_handler(event: dict, context) -> dict:
         Response dictionary with status code and body
     """
     try:
-        body = json.loads(event.get('body', '{}'))
-        user_input = body.get('input')
-        session_id = body.get('session_id')
-        
         client = BedrockAgentClient()
+        user_input = client.parse_event(event)
+        session_id = None  # Session tracking not required for this flow
+        
         response = client.communicate(user_input, session_id)
         
         return {

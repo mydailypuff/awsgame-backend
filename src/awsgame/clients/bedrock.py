@@ -1,4 +1,16 @@
 """Bedrock agent client implementation."""
+import json
+import os
+from typing import Dict, Optional, Any
+
+import boto3
+from dotenv import load_dotenv
+from botocore.exceptions import BotoCoreError, ClientError
+
+from awsgame.exceptions.custom_exceptions import AgentValidationError, AgentCommunicationError
+
+# Load environment variables
+load_dotenv()
 import boto3
 from typing import Dict, Any, Optional
 
@@ -27,27 +39,53 @@ class BedrockAgentClient:
         Raises:
             AgentValidationError: If input validation fails
         """
+
         if not user_input or not isinstance(user_input, str):
             raise AgentValidationError("Invalid input: Input must be a non-empty string")
         
         if len(user_input.strip()) == 0:
             raise AgentValidationError("Invalid input: Input cannot be empty or whitespace")
 
-    def validate_response(self, completion: str, token_usage: Dict[str, Any]) -> None:
+    def validate_response(self, completion: str) -> None:
         """Validate the response from the agent.
 
         Args:
             completion: The completion string from the agent
-            token_usage: Dictionary containing token usage information
 
         Raises:
             AgentValidationError: If response validation fails
         """
         if not completion or not isinstance(completion, str):
             raise AgentValidationError("Invalid response: Completion must be a non-empty string")
+
+    def parse_event(self, event: dict) -> str:
+        """Parse the event data and extract the game state.
         
-        if not token_usage or not isinstance(token_usage, dict):
-            raise AgentValidationError("Invalid response: Token usage must be a non-empty dictionary")
+        Args:
+            event: The event dictionary containing the game state
+            
+        Returns:
+            str: JSON string containing the structured game state
+        """
+        chunk_data = event.get('chunk', {}).get('bytes', b'{}')
+        if isinstance(chunk_data, bytes):
+            body = json.loads(chunk_data.decode('utf-8'))
+        else:
+            body = json.loads(chunk_data)
+            
+        # Extract game state components
+        scene = body.get('SCENE')
+        scenario = body.get('SCENARIO', {})
+        scores = body.get('SCORES', {})
+        game_score = body.get('GAME_SCORE')
+        
+        # Combine game state into structured input
+        return json.dumps({
+            'scene': scene,
+            'scenario': scenario,
+            'scores': scores,
+            'game_score': game_score
+        })
 
     def communicate(self, user_input: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         """Send a message to the agent and get the response.
@@ -67,21 +105,29 @@ class BedrockAgentClient:
             self.validate_input(user_input)
             
             response = self.bedrock_agent_runtime.invoke_agent(
-                agentId='YOUR_AGENT_ID',
-                agentAliasId='YOUR_ALIAS_ID',
+                agentId=os.getenv('BEDROCK_AGENT_ID'),
+                agentAliasId=os.getenv('BEDROCK_AGENT_ALIAS_ID'),
                 sessionId=session_id or 'default-session',
                 inputText=user_input
             )
             
-            completion = response['completion']
-            token_usage = response.get('usage', {})
+            # Extract completion from Bedrock Agent Runtime EventStream response
+            completion = ""
+            # Handle the streaming response
+            for event in response.get('completion', []):
+                if "chunk" in event:
+                    chunk = event["chunk"]
+                    completion += chunk["bytes"].decode()
             
-            self.validate_response(completion, token_usage)
+            # Extract token usage information
+            token_usage = response.get("usage", {})
+            print(f'Completion:{completion}')
+            
+            self.validate_response(completion)
             
             return {
                 'completion': completion,
-                'token_usage': token_usage,
-                'session_id': session_id
+                'session_id': response.get('sessionId')
             }
             
         except AgentValidationError:
