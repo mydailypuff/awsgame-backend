@@ -28,6 +28,7 @@ def lambda_handler(event: dict, context) -> dict:
     try:
         client = BedrockAgentClient()
         user_input = client.parse_event(event)
+        print(f"Received input: {user_input}")
         session_id = None  # Session tracking not required for this flow
         
         response = client.communicate(user_input, session_id)

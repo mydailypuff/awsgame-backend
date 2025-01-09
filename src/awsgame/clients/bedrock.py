@@ -47,16 +47,25 @@ class BedrockAgentClient:
             raise AgentValidationError("Invalid input: Input cannot be empty or whitespace")
 
     def validate_response(self, completion: str) -> None:
-        """Validate the response from the agent.
+        """Validate the response from the agent and clean it for JSON parsing.
 
         Args:
             completion: The completion string from the agent
 
         Raises:
-            AgentValidationError: If response validation fails
+            AgentValidationError: If response validation fails or JSON parsing fails
         """
         if not completion or not isinstance(completion, str):
             raise AgentValidationError("Invalid response: Completion must be a non-empty string")
+            
+        try:
+            # Clean up the completion string by removing extra whitespace and normalizing line endings
+            cleaned_completion = " ".join(completion.strip().split())
+            # Parse as JSON to validate format and return cleaned version
+            json.loads(cleaned_completion)
+            return cleaned_completion
+        except json.JSONDecodeError as e:
+            raise AgentValidationError(f"Invalid JSON response: {str(e)}")
 
     def parse_event(self, event: dict) -> str:
         """Parse the event data and extract the game state.
@@ -121,12 +130,10 @@ class BedrockAgentClient:
             
             # Extract token usage information
             token_usage = response.get("usage", {})
-            print(f'Completion:{completion}')
-            
-            self.validate_response(completion)
+            cleaned_completion = self.validate_response(completion)
             
             return {
-                'completion': completion,
+                'completion': cleaned_completion,
                 'session_id': response.get('sessionId')
             }
             
