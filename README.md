@@ -68,13 +68,12 @@ except AgentError as e:
 
 ## Configuration
 
-Set the following environment variables:
-- `BEDROCK_AGENT_ID`: Your Bedrock Agent ID
-- `BEDROCK_AGENT_ALIAS_ID`: Your Bedrock Agent Alias ID
-- `AWS_REGION`: AWS region (optional, defaults to us-east-1)
+Before using the package, make sure to replace the following placeholders in the `src/awsgame/clients/bedrock.py` file:
+- `YOUR_AGENT_ID`: Your Bedrock Agent ID
+- `YOUR_ALIAS_ID`: Your Bedrock Agent Alias ID
+
+The AWS region defaults to us-east-1 if not specified.
 
 ## License
 
 MIT License
-
-I want to create a agent in AWS Bedrock using 
