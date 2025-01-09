@@ -1,14 +1,19 @@
-FROM public.ecr.aws/lambda/python:3.9
+# Use Python 3.9 slim base image
+FROM python:3.9-slim
 
-# Copy requirements.txt
-COPY requirements.txt ${LAMBDA_TASK_ROOT}
+# Set working directory
+WORKDIR /app
 
-# Install the specified packages
-RUN pip install -r requirements.txt
+# Copy package files
+COPY pyproject.toml setup.py requirements.txt ./
+COPY src/ ./src/
 
-# Copy function code
-COPY agent_invocation.py ${LAMBDA_TASK_ROOT}
-COPY main.py ${LAMBDA_TASK_ROOT}
+# Install dependencies and package
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir .
 
-# Set the CMD to your handler
-CMD [ "main.lambda_handler" ]
+# Set Python path
+ENV PYTHONPATH=/app/src
+
+# Run the Lambda handler
+CMD ["python", "-m", "awslambdaric", "awsgame.handlers.lambda_handler.lambda_handler"]
