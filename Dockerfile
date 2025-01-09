@@ -1,19 +1,17 @@
-# Use Python 3.9 slim base image
+# Use AWS Lambda Python runtime as base image
 FROM public.ecr.aws/lambda/python:3.9
 
 # Set working directory
-WORKDIR /app
+WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Copy package files
-COPY pyproject.toml setup.py requirements.txt ./
-COPY src/ ./src/
+# Copy requirements file
+COPY requirements.txt .
 
-# Install dependencies and package
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir .
+# Install dependencies
+RUN pip install -r requirements.txt
 
-# Set Python path
-ENV PYTHONPATH=/app/src
+# Copy function code
+COPY src/awsgame ./awsgame
 
-# Run the Lambda handler
-CMD ["python", "-m", "awslambdaric", "awsgame.handlers.lambda_handler.lambda_handler"]
+# Set the handler
+CMD ["awsgame.handlers.lambda_handler.lambda_handler"]

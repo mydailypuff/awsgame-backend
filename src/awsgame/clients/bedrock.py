@@ -137,7 +137,7 @@ class BedrockAgentClient:
                 'session_id': response.get('sessionId')
             }
             
-        except AgentValidationError:
-            raise
+        except AgentValidationError as e:
+            raise AgentValidationError(f"Input validation failed: {str(e)}")
         except Exception as e:
-            raise AgentCommunicationError(f"Failed to communicate with agent: {str(e)}")
+            raise AgentCommunicationError(f"Failed to communicate with Bedrock agent: {str(e)}")
