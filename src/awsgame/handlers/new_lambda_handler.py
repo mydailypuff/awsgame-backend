@@ -4,6 +4,9 @@ from typing import Optional, Dict, Any
 
 from ..clients.bedrock import BedrockAgentClient
 from ..exceptions.custom_exceptions import AgentValidationError, AgentCommunicationError
+from ..logger import setup_logger
+
+logger = setup_logger(__name__)
 
 def create_log_stream(session_id: str) -> str:
     """Create a new log stream name for the session.
@@ -26,6 +29,8 @@ def lambda_handler(event: dict, context) -> dict:
     Returns:
         Response dictionary with status code and body
     """
+    logger.info("New Lambda handler started")
+    logger.debug(f"Received event: {event}")
     try:
         client = BedrockAgentClient()
         user_input = client.parse_event(event)
@@ -40,15 +45,20 @@ def lambda_handler(event: dict, context) -> dict:
         }
         
     except AgentValidationError as e:
-        return {
+        error_response = {
             'statusCode': 400,
             'body': json.dumps({'error': str(e)})
         }
+        logger.debug(f"Returning error response: {error_response}")
+        return error_response
     except AgentCommunicationError as e:
-        return {
+        logger.error(f"Communication error in new handler: {str(e)}", exc_info=True)
+        error_response = {
             'statusCode': 502,
             'body': json.dumps({'error': str(e)})
         }
+        logger.debug(f"Returning error response: {error_response}")
+        return error_response
     except Exception as e:
         return {
             'statusCode': 500,
