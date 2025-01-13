@@ -2,6 +2,19 @@
 import logging
 import os
 
+def get_logger(name: str) -> logging.Logger:
+    """Get a configured logger instance.
+    
+    This is a convenience wrapper around setup_logger.
+    
+    Args:
+        name: The name of the logger, typically __name__
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    return setup_logger(name)
+
 def setup_logger(name: str) -> logging.Logger:
     """Configure and return a logger instance.
     
