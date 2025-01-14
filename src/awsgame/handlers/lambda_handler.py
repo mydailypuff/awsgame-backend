@@ -1,74 +1,58 @@
 """Lambda handler implementation."""
 import json
-from typing import Optional, Dict, Any
+import logging
+from typing import Optional
 
 from ..clients.bedrock import BedrockAgentClient
-from ..exceptions.custom_exceptions import AgentValidationError, AgentCommunicationError
-from ..logger import setup_logger
+from .api_utils import create_response, parse_request_body
 
-logger = setup_logger(__name__)
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def create_log_stream(session_id: str) -> str:
-    """Create a new log stream name for the session.
+    """Create a log stream name from session ID.
     
     Args:
         session_id: Session identifier
-    
+        
     Returns:
         Log stream name
     """
-    return f"game-session-{session_id}"
+    return f"session-{session_id}"
 
 def lambda_handler(event: dict, context) -> dict:
-    """Handle Lambda function invocation.
+    '''Handle Lambda function invocation from API Gateway.
     
     Args:
-        event: Lambda event data
+        event: API Gateway event data
         context: Lambda context
         
     Returns:
-        API Gateway response dictionary
-    """
+        API Gateway response dictionary with status code and processed response
+    '''
     logger.info("Lambda handler started")
-    """AWS Lambda handler function.
-
-    Args:
-        event: Lambda event data
-        context: Lambda context object
-
-    Returns:
-        Response dictionary with status code and body
-    """
+    
     try:
-        client = BedrockAgentClient()
-        user_input = client.parse_event(event)
-        logger.info(f"Processing user input: {user_input}")
-        session_id = None  # Session tracking not required for this flow
-        logger.debug("No session tracking required - using default session")
+        # Parse and validate request body using utility function
+        body = parse_request_body(event)
+        user_input = body.get("user_input")
+        session_id = body.get("session_id")
         
-        response = client.communicate(user_input, session_id)
+        if not user_input:
+            return create_response(400, {"error": "user_input is required"})
         
-        logger.info("Successfully processed request")
-        logger.debug(f"Response payload: {response}")
-        return {
-            'statusCode': 200,
-            'body': json.dumps(response)
-        }
+        # Initialize Bedrock client and process the input
+        bedrock_client = BedrockAgentClient()
+        response = bedrock_client.communicate(user_input, session_id)
         
-    except AgentValidationError as e:
-        logger.error(f"Validation error occurred: {str(e)}")
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': str(e)})
-        }
-    except AgentCommunicationError as e:
-        logger.error(f"Communication error occurred: {str(e)}", exc_info=True)
-        return {
-            'statusCode': 502,
-            'body': json.dumps({'error': str(e)})
-        }
+        # Return successful response using utility function
+        return create_response(200, response)
+        
+    except ValueError as e:
+        # Handle validation errors
+        logger.error(f"Validation error: {str(e)}")
+        return create_response(400, {"error": str(e)})
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        # Handle unexpected errors
+        logger.error(f"Error processing request: {str(e)}")
+        return create_response(500, {"error": str(e)})

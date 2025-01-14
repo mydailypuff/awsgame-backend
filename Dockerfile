@@ -1,17 +1,14 @@
-# Use AWS Lambda Python runtime as base image
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.11
 
-# Set working directory
-WORKDIR ${LAMBDA_TASK_ROOT}
+# Copy requirements.txt
+COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
-# Copy requirements file
-COPY requirements.txt .
-
-# Install dependencies
+# Install the specified packages
 RUN pip install -r requirements.txt
 
 # Copy function code
-COPY src/awsgame ./awsgame
+COPY src/awsgame ${LAMBDA_TASK_ROOT}/awsgame/
+COPY setup.py ${LAMBDA_TASK_ROOT}
 
-# Set the handler
-CMD ["awsgame.handlers.lambda_handler.lambda_handler"]
+# Set the CMD to your handler
+CMD [ "awsgame.handlers.lambda_handler.lambda_handler" ]
