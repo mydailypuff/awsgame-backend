@@ -47,6 +47,8 @@ def lambda_handler(event: dict, context) -> dict:
         # Initialize Bedrock client and process the input
         bedrock_client = BedrockAgentClient()
         response = bedrock_client.communicate(user_input, session_id)
+        print("response", response)
+        print("Type of response", type(response))
         
         # Return successful response using utility function
         return create_response(200, response)
