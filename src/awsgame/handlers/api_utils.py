@@ -13,9 +13,21 @@ def create_response(status_code: int, body: Any, cors: bool = True) -> Dict[str,
     Returns:
         API Gateway response dictionary
     """
+    # Ensure body is properly formatted for JSON
+    if isinstance(body, str):
+        try:
+            # Try to parse as JSON first
+            parsed_body = json.loads(body)
+            body_to_dump = parsed_body
+        except json.JSONDecodeError:
+            # If not valid JSON, use the string as is
+            body_to_dump = body
+    else:
+        body_to_dump = body
+
     response = {
         'statusCode': status_code,
-        'body': json.dumps(body)
+        'body': json.dumps(body_to_dump, ensure_ascii=False)
     }
     
     if cors:

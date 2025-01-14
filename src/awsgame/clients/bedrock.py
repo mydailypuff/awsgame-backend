@@ -43,9 +43,23 @@ class BedrockAgentClient:
             raise AgentValidationError("Response cannot be None")
         if not isinstance(completion, str):
             raise AgentValidationError(f"Response must be a string, got {type(completion)}")
+        
+        # Clean up line breaks and whitespace
         cleaned = str(completion).strip()
+        cleaned = ' '.join(cleaned.splitlines())
+        
         if not cleaned:
             raise AgentValidationError("Response cannot be empty")
+            
+        # Attempt to parse as JSON if it looks like JSON
+        if cleaned.startswith('{') and cleaned.endswith('}'):
+            try:
+                import json
+                parsed = json.loads(cleaned)
+                return json.dumps(parsed)  # Reformat to ensure proper JSON
+            except json.JSONDecodeError:
+                pass
+                
         return cleaned
 
     def communicate(self, user_input: str, session_id: Optional[str] = None) -> Dict[str, Any]:
@@ -89,7 +103,10 @@ class BedrockAgentClient:
             logger.debug(f"Received completion from Bedrock: {completion_text}")
             
             cleaned_response = self.validate_response(completion_text)
+            print(cleaned_response)
+            print(type(cleaned_response))
             return {'response': cleaned_response}
+        
             
         except client.exceptions.ResourceNotFoundException as e:
             logger.error(f"Bedrock agent not found: {str(e)}")
