@@ -31,7 +31,9 @@ def lambda_handler(event: dict, context) -> dict:
         API Gateway response dictionary with status code and processed response
     '''
     logger.info("Lambda handler started")
-    
+    print("Lambda handler started")
+    logger.info(f"Received event: {json.dumps(event)}")
+    print(event)
     try:
         logger.info(f"Received event: {json.dumps(event)}")
         # Parse and validate request body using utility function
