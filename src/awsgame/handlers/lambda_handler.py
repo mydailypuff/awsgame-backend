@@ -51,7 +51,7 @@ def lambda_handler(event: dict, context) -> dict:
         print("Type of response", type(response))
         
         # Return successful response using utility function
-        return create_response(200, response)
+        return create_response(200, response, cors=True)
         
     except ValueError as e:
         # Handle validation errors
