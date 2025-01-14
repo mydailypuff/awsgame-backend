@@ -33,6 +33,7 @@ def lambda_handler(event: dict, context) -> dict:
     logger.info("Lambda handler started")
     
     try:
+        logger.info(f"Received event: {json.dumps(event)}")
         # Parse and validate request body using utility function
         body = parse_request_body(event)
         user_input = body.get("user_input")
